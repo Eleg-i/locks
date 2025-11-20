@@ -5,6 +5,9 @@
   "type": "module",
   "module": "dist/index.mjs",
   "main": "dist/index.cjs",
+  "publishConfig": {
+    "access": "public"
+  },
   "files": [
     "dist",
     "src"
