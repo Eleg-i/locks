@@ -43,5 +43,6 @@
     "*.css": "$(capture).css.gz, $(capture).css.map"
   },
   "typescript.tsdk": "node_modules/typescript/lib",
-  "git.enableCommitSigning": false
+  "git.enableCommitSigning": true,
+  "liveServer.settings.port": 7001
 }

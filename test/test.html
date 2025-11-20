@@ -1,0 +1,632 @@
+<!DOCTYPE html>
+<html lang="zh-cn">
+
+  <head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>@cailiao/locks 测试页面</title>
+    <style>
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+        line-height: 1.6;
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 20px;
+      }
+
+      .test-section {
+        margin-bottom: 30px;
+        padding: 20px;
+        border: 1px solid #e0e0e0;
+        border-radius: 8px;
+        background-color: #f9f9f9;
+      }
+
+      h2 {
+        color: #333;
+        border-bottom: 2px solid #4a90e2;
+        padding-bottom: 10px;
+      }
+
+      .controls {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+        margin-bottom: 15px;
+      }
+
+      button {
+        padding: 8px 16px;
+        background-color: #4a90e2;
+        color: white;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 14px;
+      }
+
+      button:hover {
+        background-color: #357abd;
+      }
+
+      button:disabled {
+        background-color: #ccc;
+        cursor: not-allowed;
+      }
+
+      .output {
+        background-color: #2d2d2d;
+        color: #f8f8f2;
+        padding: 15px;
+        border-radius: 4px;
+        font-family: 'Monaco', 'Menlo', monospace;
+        font-size: 14px;
+        max-height: 300px;
+        overflow-y: auto;
+        white-space: pre-wrap;
+        word-break: break-all;
+      }
+
+      .info {
+        color: #00ff00;
+      }
+
+      .error {
+        color: #ff6b6b;
+      }
+
+      .success {
+        color: #4caf50;
+      }
+
+      .input-group {
+        margin-bottom: 10px;
+      }
+
+      input[type="text"],
+      input[type="number"] {
+        padding: 8px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        margin-right: 10px;
+        width: 200px;
+      }
+
+      label {
+        margin-right: 5px;
+      }
+
+      .lock-status {
+        display: inline-block;
+        padding: 2px 8px;
+        border-radius: 4px;
+        font-size: 12px;
+        font-weight: bold;
+      }
+
+      .status-held {
+        background-color: #ff6b6b;
+        color: white;
+      }
+
+      .status-pending {
+        background-color: #ffd93d;
+        color: #333;
+      }
+
+      .status-available {
+        background-color: #6bcb77;
+        color: white;
+      }
+
+      .lock-item {
+        margin: 10px 0;
+        padding: 10px;
+        background-color: #f0f0f0;
+        border-radius: 4px;
+      }
+    </style>
+  </head>
+
+  <body>
+    <h1>@cailiao/locks 库测试页面</h1>
+
+    <div class="test-section">
+      <h2>1. 基本锁操作 - request/release</h2>
+      <div class="input-group">
+        <input type="text" id="basic-lock-name" placeholder="锁名称" value="testLock">
+        <label>模式:</label>
+        <select id="basic-lock-mode">
+          <option value="exclusive">exclusive</option>
+          <option value="shared">shared</option>
+        </select>
+      </div>
+      <div class="controls">
+        <button id="basic-acquire">申请锁</button>
+        <button id="basic-release" disabled>释放锁</button>
+      </div>
+      <div id="basic-output" class="output"></div>
+    </div>
+
+    <div class="test-section">
+      <h2>2. 回调函数模式</h2>
+      <div class="input-group">
+        <input type="text" id="callback-lock-name" placeholder="锁名称" value="callbackLock">
+        <input type="number" id="callback-duration" placeholder="持锁时间(ms)" value="2000" min="100">
+      </div>
+      <div class="controls">
+        <button id="callback-test">执行回调模式测试</button>
+      </div>
+      <div id="callback-output" class="output"></div>
+    </div>
+
+    <div class="test-section">
+      <h2>3. 超时控制测试</h2>
+      <div class="input-group">
+        <input type="text" id="timeout-lock-name" placeholder="锁名称" value="timeoutLock">
+        <input type="number" id="timeout-value" placeholder="超时时间(ms)" value="3000" min="100">
+      </div>
+      <div class="controls">
+        <button id="timeout-hold">持有锁</button>
+        <button id="timeout-acquire">尝试获取锁(带超时)</button>
+        <button id="timeout-release" disabled>释放锁</button>
+      </div>
+      <div id="timeout-output" class="output"></div>
+    </div>
+
+    <div class="test-section">
+      <h2>4. 查询锁状态 - find/status/list</h2>
+      <div class="input-group">
+        <input type="text" id="query-lock-name" placeholder="锁名称" value="queryLock">
+      </div>
+      <div class="controls">
+        <button id="find-test">检查锁是否存在</button>
+        <button id="status-test">获取锁详细状态</button>
+        <button id="list-test">列出所有锁</button>
+        <button id="query-test">等待锁释放</button>
+      </div>
+      <div id="query-output" class="output"></div>
+    </div>
+
+    <div class="test-section">
+      <h2>5. 并发控制测试</h2>
+      <div class="input-group">
+        <input type="number" id="concurrency-count" placeholder="并发数" value="3" min="1" max="10">
+        <input type="number" id="concurrency-delay" placeholder="操作延迟(ms)" value="500" min="100">
+      </div>
+      <div class="controls">
+        <button id="concurrency-test">执行并发测试</button>
+      </div>
+      <div id="concurrency-output" class="output"></div>
+      <div>
+        <strong>共享资源当前值:</strong> <span id="shared-resource-value">0</span>
+      </div>
+    </div>
+
+    <div class="test-section">
+      <h2>6. AbortSignal 取消测试</h2>
+      <div class="input-group">
+        <input type="text" id="abort-lock-name" placeholder="锁名称" value="abortLock">
+        <input type="number" id="abort-delay" placeholder="取消延迟(ms)" value="2000" min="100">
+      </div>
+      <div class="controls">
+        <button id="abort-hold">持有锁</button>
+        <button id="abort-request">请求锁(可取消)</button>
+        <button id="abort-release" disabled>释放锁</button>
+        <button id="abort-cancel" disabled>手动取消</button>
+      </div>
+      <div id="abort-output" class="output"></div>
+    </div>
+
+    <script type="module">
+      import Locks from '../dist/index.mjs'
+
+      // 全局变量存储当前持有的锁
+      let currentLocks = new Map()
+      let sharedResourceValue = 0
+      let abortController = null
+
+      // 日志输出函数
+      function log(outputElementId, message, type = 'info') {
+        const output = document.getElementById(outputElementId)
+        const timestamp = new Date().toLocaleTimeString()
+        const typeClass = type === 'info' ? 'info' : type === 'error' ? 'error' : 'success'
+        output.innerHTML += `<span class="${typeClass}">[${timestamp}] ${message}</span>\n`
+        output.scrollTop = output.scrollHeight
+      }
+
+      // 清空日志
+      function clearLog(outputElementId) {
+        document.getElementById(outputElementId).innerHTML = ''
+      }
+
+      // 测试用的延迟函数
+      function delay(ms) {
+        return new Promise(resolve => setTimeout(resolve, ms))
+      }
+
+      // 1. 基本锁操作测试
+      function setupBasicTest() {
+        const lockNameInput = document.getElementById('basic-lock-name')
+        const lockModeSelect = document.getElementById('basic-lock-mode')
+        const acquireBtn = document.getElementById('basic-acquire')
+        const releaseBtn = document.getElementById('basic-release')
+
+        acquireBtn.addEventListener('click', async () => {
+          const lockName = lockNameInput.value.trim() || 'testLock'
+          const mode = lockModeSelect.value
+          clearLog('basic-output')
+          log('basic-output', `尝试获取锁: ${lockName}, 模式: ${mode}`)
+
+          try {
+            const lock = await Locks.request(lockName, { mode })
+            currentLocks.set('basic', lock)
+            log('basic-output', `成功获取锁: ${lockName}`, 'success')
+            acquireBtn.disabled = true
+            releaseBtn.disabled = false
+          } catch (error) {
+            log('basic-output', `获取锁失败: ${error.message}`, 'error')
+          }
+        })
+
+        releaseBtn.addEventListener('click', async () => {
+          const lock = currentLocks.get('basic')
+          const lockName = lockNameInput.value.trim() || 'testLock'
+
+          if (lock) {
+            try {
+              Locks.release(lock)
+              currentLocks.delete('basic')
+              log('basic-output', `成功释放锁: ${lockName}`, 'success')
+              acquireBtn.disabled = false
+              releaseBtn.disabled = true
+            } catch (error) {
+              log('basic-output', `释放锁失败: ${error.message}`, 'error')
+            }
+          }
+        })
+      }
+
+      // 2. 回调函数模式测试
+      function setupCallbackTest() {
+        const lockNameInput = document.getElementById('callback-lock-name')
+        const durationInput = document.getElementById('callback-duration')
+        const testBtn = document.getElementById('callback-test')
+
+        testBtn.addEventListener('click', async () => {
+          const lockName = lockNameInput.value.trim() || 'callbackLock'
+          const duration = parseInt(durationInput.value) || 2000
+          clearLog('callback-output')
+
+          log('callback-output', `开始回调函数模式测试: ${lockName}, 持锁时间: ${duration}ms`)
+
+          try {
+            const result = await Locks.request(lockName, {}, async (lock) => {
+              log('callback-output', `在回调中获取锁: ${lockName}`, 'success')
+              log('callback-output', `模拟执行操作 ${duration}ms...`)
+              await delay(duration)
+              log('callback-output', `操作执行完成，准备自动释放锁`)
+              return '操作成功完成'
+            })
+
+            log('callback-output', `回调函数执行完成，结果: ${result}`, 'success')
+            log('callback-output', '锁已自动释放', 'success')
+          } catch (error) {
+            log('callback-output', `回调模式测试失败: ${error.message}`, 'error')
+          }
+        })
+      }
+
+      // 3. 超时控制测试
+      function setupTimeoutTest() {
+        const lockNameInput = document.getElementById('timeout-lock-name')
+        const timeoutInput = document.getElementById('timeout-value')
+        const holdBtn = document.getElementById('timeout-hold')
+        const acquireBtn = document.getElementById('timeout-acquire')
+        const releaseBtn = document.getElementById('timeout-release')
+
+        holdBtn.addEventListener('click', async () => {
+          const lockName = lockNameInput.value.trim() || 'timeoutLock'
+          clearLog('timeout-output')
+          log('timeout-output', `持有锁(不释放): ${lockName}`)
+
+          try {
+            const lock = await Locks.request(lockName)
+            currentLocks.set('timeout', lock)
+            log('timeout-output', `成功获取并持有锁: ${lockName}`, 'success')
+            holdBtn.disabled = true
+            releaseBtn.disabled = false
+          } catch (error) {
+            log('timeout-output', `获取锁失败: ${error.message}`, 'error')
+          }
+        })
+
+        acquireBtn.addEventListener('click', async () => {
+          const lockName = lockNameInput.value.trim() || 'timeoutLock'
+          const timeout = parseInt(timeoutInput.value) || 3000
+          log('timeout-output', `尝试获取锁(超时: ${timeout}ms): ${lockName}`)
+
+          try {
+            const lock = await Locks.request(lockName, { timeout })
+            log('timeout-output', `成功获取锁: ${lockName}`, 'success')
+            Locks.release(lock)
+            log('timeout-output', `已释放锁: ${lockName}`)
+          } catch (error) {
+            log('timeout-output', `获取锁超时失败: ${error.message}`, 'error')
+          }
+        })
+
+        releaseBtn.addEventListener('click', () => {
+          const lock = currentLocks.get('timeout')
+          const lockName = lockNameInput.value.trim() || 'timeoutLock'
+
+          if (lock) {
+            Locks.release(lock)
+            currentLocks.delete('timeout')
+            log('timeout-output', `成功释放锁: ${lockName}`, 'success')
+            holdBtn.disabled = false
+            releaseBtn.disabled = true
+          }
+        })
+      }
+
+      // 4. 查询锁状态测试
+      function setupQueryTest() {
+        const lockNameInput = document.getElementById('query-lock-name')
+        const findBtn = document.getElementById('find-test')
+        const statusBtn = document.getElementById('status-test')
+        const listBtn = document.getElementById('list-test')
+        const queryBtn = document.getElementById('query-test')
+
+        findBtn.addEventListener('click', async () => {
+          const lockName = lockNameInput.value.trim() || 'queryLock'
+          log('query-output', `检查锁是否存在: ${lockName}`)
+
+          try {
+            const exists = await Locks.find(lockName)
+            const statusText = exists ? '存在 (被占用)' : '不存在 (可用)'
+            const statusClass = exists ? 'status-held' : 'status-available'
+            log('query-output', `锁 ${lockName}: <span class="lock-status ${statusClass}">${statusText}</span>`)
+          } catch (error) {
+            log('query-output', `查询失败: ${error.message}`, 'error')
+          }
+        })
+
+        statusBtn.addEventListener('click', async () => {
+          const lockName = lockNameInput.value.trim() || 'queryLock'
+          log('query-output', `获取锁详细状态: ${lockName}`)
+
+          try {
+            const status = await Locks.status(lockName)
+            if (status) {
+              const statusText = status.held ? '被持有' : status.pending ? '等待中' : '可用'
+              const statusClass = status.held ? 'status-held' : status.pending ? 'status-pending' : 'status-available'
+              log('query-output', `锁 ${lockName}: <span class="lock-status ${statusClass}">${statusText}</span>`)
+              log('query-output', `详细信息: 模式=${status.mode}, 被持有=${status.held}, 等待中=${status.pending}`)
+            } else {
+              log('query-output', `锁 ${lockName} 不存在`)
+            }
+          } catch (error) {
+            log('query-output', `获取状态失败: ${error.message}`, 'error')
+          }
+        })
+
+        listBtn.addEventListener('click', async () => {
+          log('query-output', '列出所有锁状态')
+
+          try {
+            const allLocks = await Locks.list()
+
+            if (allLocks.held && allLocks.held.length > 0) {
+              log('query-output', '\n已持有锁:')
+              allLocks.held.forEach(lock => {
+                log('query-output', `  - ${lock.name} (模式: ${lock.mode})`)
+              })
+            } else {
+              log('query-output', '\n没有已持有锁')
+            }
+
+            if (allLocks.pending && allLocks.pending.length > 0) {
+              log('query-output', '\n等待中锁:')
+              allLocks.pending.forEach(lock => {
+                log('query-output', `  - ${lock.name} (模式: ${lock.mode})`)
+              })
+            } else {
+              log('query-output', '\n没有等待中锁')
+            }
+          } catch (error) {
+            log('query-output', `获取锁列表失败: ${error.message}`, 'error')
+          }
+        })
+
+        queryBtn.addEventListener('click', async () => {
+          const lockName = lockNameInput.value.trim() || 'queryLock'
+          log('query-output', `等待锁释放: ${lockName}`)
+
+          try {
+            await Locks.query(lockName)
+            log('query-output', `锁 ${lockName} 已释放`, 'success')
+          } catch (error) {
+            log('query-output', `等待失败: ${error.message}`, 'error')
+          }
+        })
+      }
+
+      // 5. 并发控制测试
+      function setupConcurrencyTest() {
+        const countInput = document.getElementById('concurrency-count')
+        const delayInput = document.getElementById('concurrency-delay')
+        const testBtn = document.getElementById('concurrency-test')
+        const valueDisplay = document.getElementById('shared-resource-value')
+
+        // 重置共享资源
+        sharedResourceValue = 0
+        valueDisplay.textContent = sharedResourceValue
+
+        async function updateSharedResource(index, delayMs) {
+          let lock = null
+          try {
+            log('concurrency-output', `任务 ${index}: 尝试获取锁`)
+            lock = await Locks.request('sharedResource')
+            log('concurrency-output', `任务 ${index}: 成功获取锁`, 'success')
+
+            // 读取当前值
+            const currentValue = sharedResourceValue
+            log('concurrency-output', `任务 ${index}: 读取值 = ${currentValue}`)
+
+            // 模拟耗时操作
+            log('concurrency-output', `任务 ${index}: 模拟操作 ${delayMs}ms...`)
+            await delay(delayMs)
+
+            // 更新值
+            sharedResourceValue = currentValue + 1
+            log('concurrency-output', `任务 ${index}: 更新值 = ${sharedResourceValue}`, 'success')
+            valueDisplay.textContent = sharedResourceValue
+
+            return sharedResourceValue
+          } finally {
+            if (lock) {
+              Locks.release(lock)
+              log('concurrency-output', `任务 ${index}: 释放锁`)
+            }
+          }
+        }
+
+        testBtn.addEventListener('click', async () => {
+          const count = parseInt(countInput.value) || 3
+          const delayMs = parseInt(delayInput.value) || 500
+          clearLog('concurrency-output')
+
+          log('concurrency-output', `开始并发控制测试: ${count} 个并发任务, 每个延迟 ${delayMs}ms`)
+
+          // 重置共享资源
+          sharedResourceValue = 0
+          valueDisplay.textContent = sharedResourceValue
+
+          const tasks = []
+          for (let i = 1; i <= count; i++) {
+            tasks.push(updateSharedResource(i, delayMs))
+          }
+
+          try {
+            const results = await Promise.all(tasks)
+            log('concurrency-output', '\n所有任务执行完成!', 'success')
+            log('concurrency-output', `最终共享资源值: ${sharedResourceValue}`)
+            log('concurrency-output', `预期值: ${count}`, sharedResourceValue === count ? 'success' : 'error')
+          } catch (error) {
+            log('concurrency-output', `并发测试失败: ${error.message}`, 'error')
+          }
+        })
+      }
+
+      // 6. AbortSignal 取消测试
+      function setupAbortTest() {
+        const lockNameInput = document.getElementById('abort-lock-name')
+        const delayInput = document.getElementById('abort-delay')
+        const holdBtn = document.getElementById('abort-hold')
+        const requestBtn = document.getElementById('abort-request')
+        const releaseBtn = document.getElementById('abort-release')
+        const cancelBtn = document.getElementById('abort-cancel')
+
+        holdBtn.addEventListener('click', async () => {
+          const lockName = lockNameInput.value.trim() || 'abortLock'
+          clearLog('abort-output')
+          log('abort-output', `持有锁(不释放): ${lockName}`)
+
+          try {
+            const lock = await Locks.request(lockName)
+            currentLocks.set('abort', lock)
+            log('abort-output', `成功获取并持有锁: ${lockName}`, 'success')
+            holdBtn.disabled = true
+            releaseBtn.disabled = false
+          } catch (error) {
+            log('abort-output', `获取锁失败: ${error.message}`, 'error')
+          }
+        })
+
+        requestBtn.addEventListener('click', async () => {
+          const lockName = lockNameInput.value.trim() || 'abortLock'
+          const delay = parseInt(delayInput.value) || 2000
+          clearLog('abort-output')
+
+          // 取消之前的控制器
+          if (abortController) {
+            abortController.abort()
+          }
+
+          abortController = new AbortController()
+          const { signal } = abortController
+
+          log('abort-output', `请求锁(将在 ${delay}ms 后自动取消): ${lockName}`)
+          log('abort-output', '可以点击"手动取消"按钮立即取消请求')
+
+          cancelBtn.disabled = false
+
+          // 设置自动取消
+          const timeoutId = setTimeout(() => {
+            log('abort-output', '达到取消延迟，自动取消请求...')
+            if (abortController) {
+              abortController.abort()
+            }
+          }, delay)
+
+          try {
+            const lock = await Locks.request(lockName, { signal })
+            clearTimeout(timeoutId)
+            log('abort-output', `成功获取锁: ${lockName}`, 'success')
+            Locks.release(lock)
+            log('abort-output', `已释放锁: ${lockName}`)
+          } catch (error) {
+            clearTimeout(timeoutId)
+            if (error.name === 'AbortError') {
+              log('abort-output', '锁请求已被取消', 'info')
+            } else {
+              log('abort-output', `请求失败: ${error.message}`, 'error')
+            }
+          } finally {
+            cancelBtn.disabled = true
+            abortController = null
+          }
+        })
+
+        cancelBtn.addEventListener('click', () => {
+          if (abortController) {
+            log('abort-output', '手动取消锁请求...')
+            abortController.abort()
+            cancelBtn.disabled = true
+          }
+        })
+
+        releaseBtn.addEventListener('click', () => {
+          const lock = currentLocks.get('abort')
+          const lockName = lockNameInput.value.trim() || 'abortLock'
+
+          if (lock) {
+            Locks.release(lock)
+            currentLocks.delete('abort')
+            log('abort-output', `成功释放锁: ${lockName}`, 'success')
+            holdBtn.disabled = false
+            releaseBtn.disabled = true
+          }
+        })
+      }
+
+      // 初始化所有测试
+      function initTests() {
+        setupBasicTest()
+        setupCallbackTest()
+        setupTimeoutTest()
+        setupQueryTest()
+        setupConcurrencyTest()
+        setupAbortTest()
+
+        console.log('@cailiao/locks 测试页面已初始化')
+      }
+
+      // 页面加载完成后初始化测试
+      window.addEventListener('DOMContentLoaded', initTests);
+    </script>
+  </body>
+
+</html>
