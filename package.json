@@ -1,6 +1,6 @@
 {
   "name": "@cailiao/locks",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "locks 锁",
   "type": "module",
   "module": "dist/index.mjs",
