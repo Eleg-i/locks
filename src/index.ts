@@ -28,8 +28,7 @@ export default class Locks {
     } = { timeout: 1e4 },
     callback?: <T = unknown>(lock?: Lock | null) => T | void
   ) {
-    let signal: AbortSignal | undefined = opt.signal!,
-        lockObj: Lock | null = null
+    let signal: AbortSignal | undefined = opt.signal!
     const {
       promise: waitLock,
       resolve: getLock,
@@ -55,7 +54,6 @@ export default class Locks {
     this.#manager
       .request(name, { ...opt, signal }, async lock => {
         getLock(lock)
-        lockObj = lock
 
         if (callback) return await callback(lock)
 
