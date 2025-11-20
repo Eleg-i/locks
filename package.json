@@ -19,20 +19,21 @@
   "types": "./dist/index.d.ts",
   "outfile": "index",
   "keywords": [
-    "watch",
-    "DOM",
-    "Element",
-    "observer"
+    "locks",
+    "lock",
+    "mutex",
+    "semaphore",
+    "condition-variable"
   ],
   "author": "cailiao(Eleg-i)",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/Eleg-i/watch-dom.git"
+    "url": "git+https://github.com/Eleg-i/locks.git"
   },
   "bugs": {
-    "url": "https://github.com/Eleg-i/watch-dom/issues"
+    "url": "https://github.com/Eleg-i/locks/issues"
   },
-  "homepage": "https://github.com/Eleg-i/watch-dom/#readme",
+  "homepage": "https://github.com/Eleg-i/locks/#readme",
   "license": "ISC",
   "scripts": {
     "build:types": "tsc --emitDeclarationOnly",
